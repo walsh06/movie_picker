@@ -2,8 +2,8 @@ import sys
 import os
 import math
 
-from tkinter import *
-from tkinter import filedialog
+from Tkinter import *
+import tkFileDialog
 from random import randint
 
 
@@ -147,7 +147,7 @@ def main():
     window.title("Testing TKINTER")
     window.geometry('500x500')
     
-    filepath = filedialog.askopenfilename()
+    filepath = tkFileDialog.askopenfilename()
 
     movies = MovieList(filepath)
     print(movies)
