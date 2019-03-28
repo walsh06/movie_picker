@@ -9,7 +9,7 @@ from random import randint
 
 class Movie():
 
-    def __init__(self, name, elo):
+    def __init__(self, name, elo=1000):
         self.name = name
         self.elo = elo
 
@@ -52,24 +52,20 @@ class MovieList():
         K = 30
         movieOne = self.movies[movieOneIndex]
         movieTwo = self.movies[movieTwoIndex]
-        Ra = movieOne.elo
-        Rb = movieTwo.elo
-        Pb = self.Probability(Ra, Rb) 
-        Pa = self.Probability(Rb, Ra) 
+        Pb = self.Probability(movieOne.elo, movieTwo.elo) 
+        Pa = self.Probability(movieTwo.elo, movieOne.elo) 
 
         if winner == 1: 
-            winner = "one"
-            Ra = Ra + K * (1 - Pa) 
-            Rb = Rb + K * (0 - Pb) 
+            movieOneChange = K * (1 - Pa) 
+            movieTwoChange = K * (0 - Pb) 
         else: 
-            winner = "two"
-            Ra = Ra + K * (0 - Pa) 
-            Rb = Rb + K * (1 - Pb) 
+            movieOneChange = K * (0 - Pa) 
+            movieTwoChange = K * (1 - Pb) 
         
-        movieOne.elo = Ra
-        movieTwo.elo = Rb
-        print("Updated Ratings for winner {}:-".format(winner)) 
-        print("{} =".format(movieOne.name), round(Ra, 6)," {} =".format(movieTwo.name), round(Rb, 6)) 
+        movieOne.updateElo(movieOneChange)
+        movieTwo.updateElo(movieTwoChange)
+        
+        print("{}: {} ({}), {}: {} ({})".format(movieOne.name, movieOne.elo, movieOneChange, movieTwo.name, movieTwo.elo, movieTwoChange)) 
 
     def load(self):
         movies = []
@@ -87,8 +83,17 @@ class MovieList():
 
     def save(self):
         with open(self.filepath, "w") as f:
-            for movie in self.movies:
+            for movie in sorted(self.movies, reverse=True):
                 f.write("{},{}\n".format(movie.name, movie.elo))
+
+    def add(self, movie):
+        self.movies.append(movie)
+        self.save()
+
+    def addByName(self, movieName, elo=1000):
+        if movieName:
+            newMovie = Movie(movieName, elo)
+            self.add(newMovie)
 
 
 class MoviePicker(Frame):
@@ -102,9 +107,11 @@ class MoviePicker(Frame):
 
         self.movieOneButton = Button(self, text="temp", command=self.movieOneClicked)
         self.movieTwoButton = Button(self, text="temp", command=self.movieTwoClicked)
-        self.movieOneButton.grid(column=0, row=3)
+        self.movieOneButton.grid(column=0, row=3, padx=10)
         Label(self, text="V").grid(column=1, row=3)
-        self.movieTwoButton.grid(column=2, row=3)
+        self.movieTwoButton.grid(column=2, row=3, padx=10)
+        self.movieOneIndex = -1
+        self.movieTwoIndex = -1
         self.getNewMovies()
 
     def movieOneClicked(self):
@@ -117,10 +124,11 @@ class MoviePicker(Frame):
         self.movies.EloRating(self.movieOneIndex, self.movieTwoIndex, winner)
         self.getNewMovies()
         self.movies.save()
-        print(sorted(self.movies))
 
     def getNewMovies(self):
-        self.movieOneIndex = randint(0, len(self.movies) - 1)
+        oldIndex = self.movieOneIndex
+        while oldIndex == self.movieOneIndex:
+            self.movieOneIndex = randint(0, len(self.movies) - 1)
         self.movieTwoIndex = self.movieOneIndex
         while self.movieTwoIndex == self.movieOneIndex:
             self.movieTwoIndex = randint(0, len(self.movies) - 1)
@@ -139,8 +147,26 @@ class Leaderboard(Frame):
     
     def load(self):
         self.listbox.delete(0, END)
+        count = 1
         for movie in sorted(self.movies, reverse=True):
-            self.listbox.insert(END, "{:.3f} | {}".format(movie.elo, movie.name))
+            self.listbox.insert(END, "{}. {}".format(count, movie.name))
+            count += 1
+
+class AddMovie(Frame):
+
+    def __init__(self, parent, movies):
+        Frame.__init__(self, parent)
+        self.movies = movies
+        self.label = Label(self, text="Enter New Movie Name:")
+        self.label.grid(column=1, row=1)
+        self.textbox = Entry(self, width=50)
+        self.textbox.grid(column=1, row=2, padx=10)
+        self.button = Button(self, text="Add Movie", command=self.addMovie)
+        self.button.grid(column=3, row=2, padx=10)
+
+    def addMovie(self):
+        self.movies.addByName(self.textbox.get())
+        self.textbox.delete(0, END)
 
 def main():
     window = Tk()
@@ -165,14 +191,20 @@ def main():
     mp = MoviePicker(window, movies)
     mp.grid(column=0, row=2, sticky='news')
     
+    am = AddMovie(window, movies)
+    am.grid(column=0, row=2, sticky='news')
+    
     menu = Menu(window)
 
-    new_item = Menu(menu)
+    new_item = Menu(menu, tearoff=False)
     new_item.add_command(label='Movie Picker', command=lambda: clicked(mp))
     new_item.add_command(label='Leaderboard', command=lambda: leaderboardClicked())
+    new_item.add_command(label='Add Movie', command=lambda: clicked(am))
 
     menu.add_cascade(label='File', menu=new_item)
     window.config(menu=menu)
+    
+    clicked(mp)
     
     window.mainloop()
 
