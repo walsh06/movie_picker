@@ -65,7 +65,7 @@ class MovieList():
         movieOne.updateElo(movieOneChange)
         movieTwo.updateElo(movieTwoChange)
         
-        print("{}: {} ({}), {}: {} ({})".format(movieOne.name, movieOne.elo, movieOneChange, movieTwo.name, movieTwo.elo, movieTwoChange)) 
+        return "{}: {:.2f} ({:.2f}), {}: {:.2f} ({:.2f})".format(movieOne.name, movieOne.elo, movieOneChange, movieTwo.name, movieTwo.elo, movieTwoChange)
 
     def load(self):
         movies = []
@@ -113,6 +113,8 @@ class MoviePicker(Frame):
         self.movieOneIndex = -1
         self.movieTwoIndex = -1
         self.getNewMovies()
+        self.output = Label(self, text="")
+        self.output.grid(column=0, row=4, columnspan=3, pady=50, padx=20)
 
     def movieOneClicked(self):
         self.calcResult(1)
@@ -121,7 +123,8 @@ class MoviePicker(Frame):
         self.calcResult(2)
 
     def calcResult(self, winner):
-        self.movies.EloRating(self.movieOneIndex, self.movieTwoIndex, winner)
+        result = self.movies.EloRating(self.movieOneIndex, self.movieTwoIndex, winner)
+        self.output.config(text="Previous Matchup\n{}".format(result))
         self.getNewMovies()
         self.movies.save()
 
@@ -141,15 +144,21 @@ class Leaderboard(Frame):
     def __init__(self, parent, movies):
         Frame.__init__(self, parent)
         self.movies = movies
-        self.listbox = Listbox(self, width=200)
-        self.listbox.grid(column=0, row=0)
+        
+        scrollbar = Scrollbar(self, orient=VERTICAL)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        
+        self.listbox = Listbox(self, width=80, yscrollcommand=scrollbar.set, selectmode=EXTENDED)
+        self.listbox.pack(expand=True, fill=Y)
+        scrollbar.config(command=self.listbox.yview)
+
         self.load()
     
     def load(self):
         self.listbox.delete(0, END)
         count = 1
         for movie in sorted(self.movies, reverse=True):
-            self.listbox.insert(END, "{}. {}".format(count, movie.name))
+            self.listbox.insert(END, "{}. {} ({:.2f})".format(count, movie.name, movie.elo))
             count += 1
 
 class AddMovie(Frame):
@@ -159,10 +168,10 @@ class AddMovie(Frame):
         self.movies = movies
         self.label = Label(self, text="Enter New Movie Name:")
         self.label.grid(column=1, row=1)
-        self.textbox = Entry(self, width=50)
-        self.textbox.grid(column=1, row=2, padx=10)
+        self.textbox = Entry(self, width=35)
+        self.textbox.grid(column=1, row=2, padx=5)
         self.button = Button(self, text="Add Movie", command=self.addMovie)
-        self.button.grid(column=3, row=2, padx=10)
+        self.button.grid(column=3, row=2, padx=5)
 
     def addMovie(self):
         self.movies.addByName(self.textbox.get())
@@ -170,13 +179,12 @@ class AddMovie(Frame):
 
 def main():
     window = Tk()
-    window.title("Testing TKINTER")
-    window.geometry('500x500')
+    window.title("Movie Leaderboard")
+    window.geometry('550x200')
     
     filepath = tkFileDialog.askopenfilename()
 
     movies = MovieList(filepath)
-    print(movies)
 
     def clicked(frame):
         frame.tkraise()
