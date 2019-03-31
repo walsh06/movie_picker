@@ -69,19 +69,30 @@ class Leaderboard(Frame):
             count += 1
 
 
-class AddMovie(Frame):
+class MovieUtils(Frame):
 
     def __init__(self, parent, movies):
         Frame.__init__(self, parent)
         self.movies = movies
-        self.label = Label(self, text="Enter New Movie Name:")
-        self.label.grid(column=1, row=1)
-        self.textbox = Entry(self, width=35)
-        self.textbox.grid(column=1, row=2, padx=5)
-        self.button = Button(self, text="Add Movie", command=self.addMovie)
-        self.button.grid(column=3, row=2, padx=5)
-        self.textbox.focus_force()
+        self.addLabel = Label(self, text="Enter New Movie Name:")
+        self.addLabel.grid(column=1, row=1)
+        self.addTextbox = Entry(self, width=35)
+        self.addTextbox.grid(column=1, row=2, padx=5)
+        self.addButton = Button(self, text="Add Movie", command=self.addMovie)
+        self.addButton.grid(column=3, row=2, padx=5)
+        self.addTextbox.focus_force()
+
+        self.resetLabel = Label(self, text="Enter Movie Name to Reset Rating:")
+        self.resetLabel.grid(column=1, row=3)
+        self.resetTextbox = Entry(self, width=35)
+        self.resetTextbox.grid(column=1, row=4, padx=5)
+        self.resetButton = Button(self, text="Reset Movie", command=self.resetMovie)
+        self.resetButton.grid(column=3, row=4, padx=5)
 
     def addMovie(self):
-        self.movies.addByName(self.textbox.get())
-        self.textbox.delete(0, END)
+        self.movies.addByName(self.addTextbox.get())
+        self.addTextbox.delete(0, END)
+
+    def resetMovie(self):
+        self.movies.resetMovie(self.resetTextbox.get())       
+        self.resetTextbox.delete(0, END)
